@@ -870,3 +870,112 @@ tr:last-child td {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ===== PhishGuard UI refinements ===== */
+
+/* Prevent layout overflow */
+.app,
+.main,
+.sidebar,
+.panel,
+.card,
+.result {
+  min-width: 0;
+}
+
+.main {
+  overflow-wrap: anywhere;
+}
+
+/* Keep forms aligned and prevent squeezed controls */
+form {
+  flex-wrap: wrap;
+}
+
+form input,
+form textarea,
+form select {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+form.stacked-form {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+form.stacked-form input,
+form.stacked-form textarea,
+form.stacked-form select {
+  flex: 0 1 auto;
+  width: 100%;
+}
+
+form.stacked-form button {
+  align-self: flex-start;
+}
+
+/* Clearer result card */
+.result {
+  line-height: 1.7;
+}
+
+.result .lookup-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #7dd3fc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.result h1 {
+  color: #f8fbff;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+/* Consistent section headings */
+.panel > h2,
+.panel > h3 {
+  line-height: 1.4;
+}
+
+/* Improve keyboard accessibility */
+.nav:focus-visible,
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 3px solid rgba(56, 189, 248, 0.6);
+  outline-offset: 3px;
+}
+
+/* Responsive history and tables */
+.history-item > * {
+  min-width: 0;
+}
+
+.panel table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Small-screen refinements */
+@media (max-width: 760px) {
+  form.stacked-form button {
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .result h1 {
+    overflow-wrap: anywhere;
+  }
+
+  .history-item {
+    overflow-wrap: anywhere;
+  }
+}
