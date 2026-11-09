@@ -428,7 +428,29 @@ app.get("/", (req, res) => {
         status: "success"
     });
 });
+// Initialize database before handling API requests
+let databaseInitialization = null;
 
+app.use("/api", async (req, res, next) => {
+    try {
+        if (!databaseInitialization) {
+            databaseInitialization = initializeDatabase().catch(error => {
+                databaseInitialization = null;
+                throw error;
+            });
+        }
+
+        await databaseInitialization;
+        next();
+
+    } catch (error) {
+        console.error("Database initialization error:", error);
+
+        res.status(500).json({
+            message: "Database initialization failed."
+        });
+    }
+});
 app.get("/api/test-db", async (req, res) => {
     try {
         const [rows] = await pool.query(
@@ -976,6 +998,7 @@ app.get("/api/phone-lookup-history", async (req, res) => {
 // START SERVER
 // ==================================================
 
+
 async function startServer() {
     try {
         await initializeDatabase();
@@ -986,10 +1009,17 @@ async function startServer() {
             );
             console.log("Press Ctrl+C to stop the server.");
         });
+
     } catch (error) {
         console.error("Unable to start PhishGuard:", error.message);
         process.exit(1);
     }
 }
 
-startServer();
+// Start server locally only
+if (require.main === module) {
+    startServer();
+}
+
+// Export Express app for Vercel
+module.exports = app;
