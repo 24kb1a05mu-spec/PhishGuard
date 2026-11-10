@@ -119,26 +119,34 @@ function App() {
   }
 
   // Quiz analytics
-  async function loadQuizAnalytics() {
-    try {
-      const analyticsResponse = await axios.get(
-        `${API}/api/quiz-analytics`
-      );
-      setQuizAnalytics(analyticsResponse.data);
+ 
+async function loadQuizAnalytics() {
+  try {
+    const analyticsResponse = await axios.get(
+      `${API}/api/quiz-analytics`
+    );
 
-      const historyResponse = await axios.get(
-        `${API}/api/quiz-history`
-      );
+    const data = analyticsResponse.data;
 
-      setQuizHistory(
-        Array.isArray(historyResponse.data)
-          ? historyResponse.data
-          : []
-      );
-    } catch (err) {
-      console.error("Failed to load quiz analytics:", err);
-    }
+    setQuizAnalytics({
+      totalAttempts: Number(data.attempts ?? 0),
+      averageScore: Number(data.average_percentage ?? 0),
+      highestScore: Number(data.highest_percentage ?? 0),
+    });
+
+    const historyResponse = await axios.get(
+      `${API}/api/quiz-history`
+    );
+
+    setQuizHistory(
+      Array.isArray(historyResponse.data)
+        ? historyResponse.data
+        : []
+    );
+  } catch (err) {
+    console.error("Failed to load quiz analytics:", err);
   }
+}
 
   // Call checker
   async function checkCall(e) {

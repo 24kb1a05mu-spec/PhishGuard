@@ -1,6 +1,8 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2/promise");
+const mysql = require("mysql2");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,7 +22,7 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-});
+}).promise();
 
 // ==================================================
 // DATABASE TABLES
@@ -542,8 +544,10 @@ app.get("/api/history", async (req, res) => {
 // DASHBOARD
 // ==================================================
 
+
 app.get("/api/dashboard", async (req, res) => {
     try {
+        // URL scan statistics
         const [scanRows] = await pool.query(`
             SELECT
                 COUNT(*) AS total,
@@ -554,13 +558,24 @@ app.get("/api/dashboard", async (req, res) => {
             FROM scan_history
         `);
 
+        // Call checks
         const [callRows] = await pool.query(
             "SELECT COUNT(*) AS total_calls FROM call_checks"
         );
 
+        // SMS checks
         const [smsRows] = await pool.query(
             "SELECT COUNT(*) AS total_sms FROM sms_checks"
         );
+
+        // Quiz analytics
+        const [quizRows] = await pool.query(`
+            SELECT
+                COUNT(*) AS total_quiz_attempts,
+                COALESCE(AVG(score_percent), 0) AS average_quiz_score,
+                COALESCE(MAX(score_percent), 0) AS highest_quiz_score
+            FROM quiz_history
+        `);
 
         res.json({
             total: Number(scanRows[0].total || 0),
@@ -568,17 +583,28 @@ app.get("/api/dashboard", async (req, res) => {
             low_risk: Number(scanRows[0].low_risk || 0),
             suspicious: Number(scanRows[0].suspicious || 0),
             high_risk: Number(scanRows[0].high_risk || 0),
+
             total_calls: Number(callRows[0].total_calls || 0),
-            total_sms: Number(smsRows[0].total_sms || 0)
+            total_sms: Number(smsRows[0].total_sms || 0),
+
+            total_quiz_attempts:
+                Number(quizRows[0].total_quiz_attempts || 0),
+
+            average_quiz_score:
+                Number(quizRows[0].average_quiz_score || 0),
+
+            highest_quiz_score:
+                Number(quizRows[0].highest_quiz_score || 0)
         });
+
     } catch (error) {
         console.error("Dashboard error:", error);
+
         res.status(500).json({
             message: "Unable to load dashboard data."
         });
     }
 });
-
 // ==================================================
 // PHONE CALL CHECKER
 // ==================================================
@@ -756,6 +782,33 @@ app.post("/api/quiz-history", async (req, res) => {
     }
 });
 
+
+app.get("/api/quiz-history", async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT
+                id,
+                total_questions,
+                correct_answers,
+                score_percent,
+                created_at
+            FROM quiz_history
+            ORDER BY id DESC
+        `);
+
+        res.json(rows);
+
+    } catch (error) {
+        console.error("Quiz history error:", error);
+
+        res.status(500).json({
+            message: "Unable to load quiz history."
+        });
+    }
+});
+
+// QUIZ ANALYTICS
+
 app.get("/api/quiz-analytics", async (req, res) => {
     try {
         const [rows] = await pool.query(`
@@ -769,8 +822,10 @@ app.get("/api/quiz-analytics", async (req, res) => {
         `);
 
         res.json(rows[0]);
+
     } catch (error) {
         console.error("Quiz analytics error:", error);
+
         res.status(500).json({
             message: "Unable to load quiz analytics."
         });
@@ -1010,10 +1065,11 @@ async function startServer() {
             console.log("Press Ctrl+C to stop the server.");
         });
 
-    } catch (error) {
-        console.error("Unable to start PhishGuard:", error.message);
-        process.exit(1);
-    }
+   } catch (error) {
+    console.error("Unable to start PhishGuard:", error);
+    console.error("Error stack:", error.stack);
+    process.exit(1);
+   }
 }
 
 // Start server locally only
